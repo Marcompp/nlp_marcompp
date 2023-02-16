@@ -1,5 +1,8 @@
 import discord
 
+with open('token.txt') as f:
+    token = f.readline()
+
 intents = discord.Intents.default()
 intents.members = True
 
@@ -29,6 +32,6 @@ async def on_message(message):
         if message.content.lower() == '!oi':
             await message.channel.send('Olá em um canal público!')
 
-client.run('MTA3NTA2MDI3ODcyNDY1NzI5Mg.G6nfk5.n5Cqr9eb1iB8d_w9lIIOEu8pl4nUrqDP9IDJrY')
+client.run(token)
 
 #discord.com/api/oauth2/authorize?client_id=1075060278724657292&permissions=274877978624&scope=bot

@@ -24,6 +24,9 @@ async def on_message(message):
             await message.channel.send('(marcompp@al.insper.edu.br)')
     elif message.content.lower() == '!source':
             await message.channel.send('Meu código-fonte está em https://github.com/Marcompp/nlp_marcompp!')
+
+    elif message.content.lower().split(' ')[0] == '!run':
+            content = message.content.lower().split(' ')  
  
     elif isinstance(message.channel, discord.DMChannel):
         if message.content.lower() == '!oi':
@@ -34,4 +37,3 @@ async def on_message(message):
 
 client.run(token)
 
-#discord.com/api/oauth2/authorize?client_id=1075060278724657292&permissions=274877978624&scope=bot

@@ -1,0 +1,19 @@
+How to make a querie to an external service in python
+To make a query to an external service in Python, you can use the requests library. Here's an example of how to make a simple GET request:
+
+python
+Copy code
+import requests
+
+response = requests.get('https://api.example.com/data')
+print(response.status_code)  # 200 if successful
+print(response.json())  # response content as a JSON object
+In this example, we are making a GET request to https://api.example.com/data. The requests.get() method returns a Response object, which contains the response status code and the response content.
+
+You can also include query parameters in your request by passing them as a dictionary to the params parameter:
+
+python
+Copy code
+params = {'param1': 'value1', 'param2': 'value2'}
+response = requests.get('https://api.example.com/data', params=params)
+For more advanced use cases, such as sending POST requests or including headers, you can refer to the requests library documentation: https://docs.python-requests.org/en/latest/

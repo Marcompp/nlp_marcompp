@@ -8,11 +8,14 @@ print(conn)
 
 payload = "{}"
 
-payload = "eevee"
-conn.request("GET", "/api/v2/pokemon/", payload)
+
+for a in range(1281):
+    payload = f"{a}"
+    conn.request("GET", "/api/v2/pokemon/", payload)
 
 
-res = conn.getresponse()
-data = res.read()
-print(res.status)
-print(data.decode("utf-8")) 
+
+    res = conn.getresponse()
+    data = res.read()
+    print(res.status)
+    print(data.decode("utf-8")) 

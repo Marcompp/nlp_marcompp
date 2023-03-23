@@ -1,7 +1,15 @@
 import requests
+import numpy as np
 
-response = requests.get('https://pokeapi.co/api/v2/pokemon/'+'eevee')
+specieslist = []
+
+response = requests.get('https://pokeapi.co/api/v2/pokemon?limit=100000&offset=0')
 print(response.status_code)  # 200 if successful
-print(response.json())  # response content as a JSON object
+res = response.json()  # response content as a JSON object
 
-print("Types: "+str(response.json()['types']))
+for re in res["results"]:
+    specieslist.append(re["name"])
+print(specieslist)
+np.savetxt("pokelist.txt", specieslist, delimiter=',',fmt='%s')
+pokelist = np.loadtxt("pokelist.txt", delimiter=',',dtype='str')
+print(pokelist)

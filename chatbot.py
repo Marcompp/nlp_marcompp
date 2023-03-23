@@ -1,4 +1,5 @@
 import discord
+import numpy as np
 
 with open('token.txt') as f:
     token = f.readline()
@@ -11,6 +12,7 @@ client = discord.Client(intents=intents)
 
 import requests
 
+pokelist = np.loadtxt("pokelist.txt", delimiter=',',dtype='str')
 
 
 @client.event
@@ -36,15 +38,24 @@ async def on_message(message):
     elif message.content.lower().split(' ')[0] == '!run':
             messagee = message.content.lower().split(' ') 
             payload = messagee[1]
-            #if payload not in ()
-            response = requests.get('https://pokeapi.co/api/v2/pokemon/'+payload)
+            if len(messagee) == 2 and payload in pokelist:
+                response = requests.get('https://pokeapi.co/api/v2/pokemon/'+payload)
 
-            res = response.json()
+                res = response.json()
 
-            print(res['types'])
+                print(res['types'])
 
-            for mes in ['types','abilities','stats']:
-                await message.channel.send(mes + ":  " +str(res[mes])) 
+                for mes in [['types','type'],['abilities','ability']]:
+                    mess = str(mes[0][0]).upper() + str(mes[0][1:]) + ": "
+                    for thing in res[mes[0]]:
+                        mess += str(thing[mes[1]]['name']) + ";  "
+                    await message.channel.send(mess) 
+                mess = 'Stats: '
+                for stat in res['stats']:
+                     mess += str(stat['stat']['name'])+":"+str(stat['base_stat'])+";  "
+                await message.channel.send(mess) 
+            else:
+                await message.channel.send('Entrada invalida para !run') 
  
     elif isinstance(message.channel, discord.DMChannel):
         if message.content.lower() == '!oi':

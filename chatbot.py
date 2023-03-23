@@ -37,8 +37,8 @@ async def on_message(message):
 
     elif message.content.lower().split(' ')[0] == '!run':
             messagee = message.content.lower().split(' ') 
-            payload = messagee[1]
-            if len(messagee) == 2 and payload in pokelist:
+            payload = '-'.join(messagee[1:])
+            if payload in pokelist:
                 response = requests.get('https://pokeapi.co/api/v2/pokemon/'+payload)
 
                 res = response.json()

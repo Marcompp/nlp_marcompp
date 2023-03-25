@@ -1,0 +1,2 @@
+Após decidir a api que queria usar, tive alguns problemas com uma mudança de endereço. 
+Também tive um pouco de dificuldade para checar se a entrada era valida, por conta do modo que o database da api é estruturada, mas consegui resolver salvando uma lista com todas as chaves aceitaveis em um documento txt.

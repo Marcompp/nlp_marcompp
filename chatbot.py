@@ -103,6 +103,8 @@ async def on_message(message):
                 # Close the database connection
                 conn.close()
                 step +=1
+                if len(url) > 0:
+                    url[0] = url[0].get('href')
             await message.channel.send('Crawling finalisado') 
         else:
             await message.channel.send('Entrada invalida para !crawl') 

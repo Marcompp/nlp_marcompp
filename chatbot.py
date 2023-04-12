@@ -5,7 +5,9 @@ import requests
 from bs4 import BeautifulSoup
 import sqlite3
 
-import functions
+#import functions
+import validators
+
 
 with open('token.txt') as f:
     token = f.readline()
@@ -68,7 +70,7 @@ async def on_message(message):
         url = []
         url.append( '-'.join(messagee[1:]) )
         #chat gpt
-        if functions.URL_validate(url):
+        if validators.url(url):
             step = 0
              # Send a GET request to the URL
             await message.channel.send('Crawling iniciado') 

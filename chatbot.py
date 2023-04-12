@@ -71,7 +71,7 @@ async def on_message(message):
         url = []
         url.append( '-'.join(messagee[1:]) )
         #chat gpt
-        if validators.url(url):
+        if validators.url(url[0]):
             step = 0
              # Send a GET request to the URL
             await message.channel.send('Crawling iniciado') 

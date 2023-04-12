@@ -87,7 +87,7 @@ async def on_message(message):
                 # Extract the page content
                 page_content = str(soup)
 
-                
+                await message.channel.send('Crawling em progresso') 
 
                 # Connect to a SQLite database
                 conn = sqlite3.connect("crawl.db")
@@ -96,7 +96,7 @@ async def on_message(message):
                 conn.execute("CREATE TABLE IF NOT EXISTS crawl (id INTEGER PRIMARY KEY, url TEXT, content TEXT)")
 
                 # Insert the page content into the database
-                conn.execute("INSERT INTO crawl (url, content) VALUES (?, ?)", (url, page_content))
+                conn.execute("INSERT INTO crawl (url, content) VALUES (?, ?)", (response, page_content))
                 conn.commit()
 
                 # Close the database connection

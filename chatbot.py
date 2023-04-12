@@ -8,6 +8,7 @@ import sqlite3
 #import functions
 import validators
 
+import wordnet
 
 with open('token.txt') as f:
     token = f.readline()
@@ -127,7 +128,7 @@ async def on_message(message):
         await message.channel.send(str(results) )
 
 
-    elif message.content.lower().split(' ')[0] == '!search':
+    elif message.content.lower().split(' ')[0] == '!wn_search':
         messagee = message.content.lower().split(' ') 
         if len(messagee) == 2:
             payload = messagee[1]

@@ -76,7 +76,8 @@ async def on_message(message):
              # Send a GET request to the URL
             await message.channel.send('Crawling iniciado') 
 
-            while (step < 15) and len(url) > 0:
+            while (step < 15) and len(url) > 0 and validators.url(url[0]):
+                
                 response = requests.get(url.pop(0))
 
                 # Parse the HTML content using BeautifulSoup

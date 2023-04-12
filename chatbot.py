@@ -83,7 +83,6 @@ async def on_message(message):
                 soup = BeautifulSoup(response.content, "html.parser")
 
                 url += list(soup.find_all("a"))
-                url = [url[i].get('href') for i in range(len(url))]
 
                 # Extract the page content
                 page_content = str(soup)

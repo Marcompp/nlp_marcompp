@@ -96,7 +96,7 @@ async def on_message(message):
                 conn.execute("CREATE TABLE IF NOT EXISTS crawl (id INTEGER PRIMARY KEY, url TEXT, content TEXT)")
 
                 # Insert the page content into the database
-                conn.execute("INSERT INTO crawl (url, content) VALUES (?, ?)", (response, page_content))
+                conn.execute("INSERT INTO crawl (url, content) VALUES (?, ?)", (str(response), str(page_content)))
                 conn.commit()
 
                 # Close the database connection

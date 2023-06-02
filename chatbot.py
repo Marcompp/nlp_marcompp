@@ -18,6 +18,8 @@ from whoosh.index import create_in, open_dir
 from whoosh.fields import Schema, TEXT, ID
 from whoosh.qparser import QueryParser
 
+from textblob import TextBlob
+
 with open('token.txt') as f:
     token = f.readline()
 
@@ -30,6 +32,8 @@ client = discord.Client(intents=intents)
 import requests
 
 pokelist = np.loadtxt("pokelist.txt", delimiter=',',dtype='str')
+
+index_dir = "index"
 
 
 @client.event
@@ -60,7 +64,7 @@ async def on_message(message):
 
                 res = response.json()
 
-                print(res['types'])
+                #print(res['types'])
 
                 for mes in [['types','type'],['abilities','ability']]:
                     mess = str(mes[0][0]).upper() + str(mes[0][1:]) + ": "
@@ -98,16 +102,20 @@ async def on_message(message):
                 # Extract the page content
                 page_content = str(soup)
 
+                # Perform sentiment analysis
+                blob = TextBlob(page_content)
+                sentiment_score = blob.sentiment.polarity
+
                 await message.channel.send('Crawling em progresso') 
 
                 # Connect to a SQLite database
                 conn = sqlite3.connect("crawl.db")
 
                 # Create a table to store the page content
-                conn.execute("CREATE TABLE IF NOT EXISTS crawl (id INTEGER PRIMARY KEY, url TEXT, content TEXT)")
+                conn.execute("CREATE TABLE IF NOT EXISTS crawl (id INTEGER PRIMARY KEY, url TEXT, content TEXT, sentiment REAL)")
 
                 # Insert the page content into the database
-                conn.execute("INSERT INTO crawl (url, content) VALUES (?, ?)", (currurl, str(page_content)))
+                conn.execute("INSERT INTO crawl (url, content,sentiment) VALUES (?, ?, ?)", (currurl, str(page_content),sentiment_score))
                 conn.commit()
 
                 # Close the database connection
@@ -119,10 +127,10 @@ async def on_message(message):
             
             
             # Create or open the index directory
-            index_dir = "index"
+            
             if not os.path.exists(index_dir):
                 os.mkdir(index_dir)
-            ix = create_in(index_dir, Schema(url=ID(stored=True), content=TEXT))
+            ix = create_in(index_dir, Schema(url=ID(stored=True), content=TEXT, sentiment=TEXT(stored=True)))
 
             # Open the index writer
             writer = ix.writer()
@@ -131,14 +139,16 @@ async def on_message(message):
             conn = sqlite3.connect("crawl.db")
 
             # Retrieve the pages from the database
-            cursor = conn.execute("SELECT url, content FROM crawl")
+            cursor = conn.execute("SELECT url, content, sentiment FROM crawl")
 
             # Index each page
             for row in cursor:
                 await message.channel.send('Aplicando index reversa') 
                 urll = row[0]
                 content = row[1]
-                writer.add_document(url=urll, content=content)
+                sentiment = row[2]
+                print(urll," ",sentiment)
+                writer.add_document(url=urll, content=content,sentiment=str(sentiment))
 
             # Commit the changes to the index
             writer.commit()
@@ -155,29 +165,63 @@ async def on_message(message):
 
     elif message.content.lower().split(' ')[0] == '!search':
         messagee = message.content.lower().split(' ') 
-        payload = ' '.join(messagee[1:])
 
+        if len(messagee) > 1:
+            minsent = -3
+            if len(messagee) > 2 and len(messagee[-1]) > 3:
+                if messagee[-1][:3] == 'th=' and messagee[-1][3:].isnumeric():
+                    minsent = float( messagee[-1][3:])
+                    await message.channel.send(f"Sentimento mínimo: {minsent}")
+                    messagee = messagee[:-1] 
 
-        # Connect to the database
-        conn = sqlite3.connect('crawl.db')
+            payload = ' '.join(messagee[1:])
 
-        # Create a cursor object
-        c = conn.cursor()
+            # Open the index directory for searching
+            ix = open_dir(index_dir)
 
-        # Search for records containing the word 'example'
-        c.execute("SELECT * FROM crawl WHERE content LIKE ?", ('%'+payload+'%',))
+            # Create a query parser
+            parser = QueryParser("content", schema=ix.schema)
 
-        # Fetch the results
-        results = c.fetchall()
+            with ix.searcher() as searcher:
+                query = parser.parse(payload)
+                results = searcher.search(query)
+                achados = 0
+                for result in results:
+                    if float(result['sentiment']) >= minsent:
+                        await message.channel.send(f"URL: {result['url']}")
+                        await message.channel.send(f"Sentiment: {float(result['sentiment'])}")
+                        achados += 1
+            if achados == 0:
+                await message.channel.send(f"Nenhuma url válida encontrada")
 
-        #print(results[1][1])
-        # Close the database connection
-        conn.close()
-        await message.channel.send(str(results[1][1]) )
+            # Connect to the database
+            #conn = sqlite3.connect('crawl.db')
+
+            # Create a cursor object
+            #c = conn.cursor()
+
+            # Search for records containing the word 'example'
+            #c.execute("SELECT * FROM crawl WHERE content LIKE ?", ('%'+payload+'%',))
+
+            # Fetch the results
+            #results = c.fetchall()
+
+            #print(results[1][1])
+            # Close the database connection
+            #conn.close()
+            #await message.channel.send(str(results[1][1]) )
+        else:
+            await message.channel.send('Entrada invalida para !search') 
 
 
     elif message.content.lower().split(' ')[0] == '!wn_search':
         messagee = message.content.lower().split(' ') 
+        minsent = -3
+        if len(messagee) == 3 and len(messagee[-1])>3:
+            if messagee[-1][:3] == 'th=' and messagee[-1][3:].isnumeric():
+                    minsent = float( messagee[-1][3:])
+                    await message.channel.send(f"Sentimento mínimo: {minsent}")
+                    messagee = messagee[:-1]
         if len(messagee) == 2:
             payload = messagee[1]
 
@@ -194,13 +238,21 @@ async def on_message(message):
                 lemma = synset.lemmas()[0].name()
                 c.execute("SELECT * FROM crawl WHERE content LIKE ?", ('%'+lemma+'%',))
                 results = c.fetchall()
-                #print(results)
-                await message.channel.send(str(results[1][1]) )
+                achados = 0
+                for result in results:
+                    sent = float(result[3])
+                    if sent>minsent:
+                        await message.channel.send(f"URL: {result[1]}")
+                        await message.channel.send(f"Sentiment: {sent}")
+                        achados +=1
+                        #await message.channel.send(str(result[1]) )
 
             # Close the database connection
             conn.close()
+            if achados == 0:
+                await message.channel.send(f"Nenhuma url válida encontrada")
         else:
-            await message.channel.send('Entrada invalida para !run') 
+            await message.channel.send('Entrada invalida para !wn_search') 
 
 
     

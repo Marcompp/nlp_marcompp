@@ -1,2 +1,2 @@
-O crawling usa um loop para pesquisar a página e todos os seus links. Ele tem um limite de 30 páginas visitadas para não demorar muito e usa o sqlite 3 para salvar o db.
+O crawling usa um loop para pesquisar a página e todos os seus links. Também aplica o Index reverso para us no !search. Ele tem um limite de 30 páginas visitadas para não demorar muito e usa o sqlite 3 para salvar o db.
 O !search usa o sqlite 3 para pesquisar o db, e o !wn_search combina isso com o wordnet. O !search aceita uma combinação de palavras mas o !wn_search aceita só uma entrada.

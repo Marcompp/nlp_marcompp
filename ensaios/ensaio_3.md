@@ -1,0 +1,2 @@
+O crawling foi modificado para calcular o sentimento de cada url usando textblob e salvar no db. O Index reverso também foi modificado.
+O !search e o !wn_search foram modificados para checar a presensa de th= na ultima palavra da entrada, e filtrar os resultados com o valor passado

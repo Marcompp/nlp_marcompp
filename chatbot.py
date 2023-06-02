@@ -20,8 +20,13 @@ from whoosh.qparser import QueryParser
 
 from textblob import TextBlob
 
+import openai
+
 with open('token.txt') as f:
     token = f.readline()
+
+with open('apikey.txt') as f:
+    openai.api_key = f.readline()
 
 intents = discord.Intents.default()
 intents.members = True
@@ -130,7 +135,7 @@ async def on_message(message):
             
             if not os.path.exists(index_dir):
                 os.mkdir(index_dir)
-            ix = create_in(index_dir, Schema(url=ID(stored=True), content=TEXT, sentiment=TEXT(stored=True)))
+            ix = create_in(index_dir, Schema(url=ID(stored=True), content=TEXT(stored=True), sentiment=TEXT(stored=True)))
 
             # Open the index writer
             writer = ix.writer()
@@ -255,7 +260,58 @@ async def on_message(message):
             await message.channel.send('Entrada invalida para !wn_search') 
 
 
-    
+    elif message.content.lower().split(' ')[0] == '!generate':
+            messagee = message.content.lower().split(' ') 
+            minsent = -3
+            if len(messagee) > 2 and len(messagee[-1]) > 3:
+                if messagee[-1][:3] == 'th=' and messagee[-1][3:].isnumeric():
+                    minsent = float( messagee[-1][3:])
+                    await message.channel.send(f"Sentimento mínimo: {minsent}")
+                    messagee = messagee[:-1] 
+
+            payload = ' '.join(messagee[1:])
+
+            # Open the index directory for searching
+            ix = open_dir(index_dir)
+
+            # Create a query parser
+            parser = QueryParser("content", schema=ix.schema)
+
+            with ix.searcher() as searcher:
+                query = parser.parse(payload)
+                results = searcher.search(query)
+                achados = 0
+                for result in results:
+                    if float(result['sentiment']) >= minsent:
+                        #await message.channel.send(f"URL: {result['url']}")
+                        #await message.channel.send(f"Sentiment: {float(result['sentiment'])}")
+                        achados += 1
+                        res = result
+                        break
+            if achados == 0:
+                await message.channel.send(f"Nenhuma url válida encontrada")
+            else:
+                await message.channel.send(f"Gerando com url={res['url']}, sentimento={res['sentiment']}")
+
+                # Compose the input prompt for the language model
+                prompt = f"Generate a sentence to sum up the content of the Url: {res['url']}:"
+
+                # Generate the sentence using OpenAI's GPT-3.5 model
+                response = openai.Completion.create(
+                    engine='text-davinci-003',
+                    prompt=prompt,
+                    max_tokens=50,
+                    n = 1,
+                    stop = None,
+                    temperature=0.7,
+                )
+
+                # Extract the generated sentence from the API response
+                generated_sentence = response.choices[0].text.strip()
+                await message.channel.send(generated_sentence)
+
+         
+
  
     elif isinstance(message.channel, discord.DMChannel):
         if message.content.lower() == '!oi':

@@ -1,0 +1,9 @@
+openai
+discord
+numpy
+requests
+bs4
+validators
+nltk
+whoosh
+textblob

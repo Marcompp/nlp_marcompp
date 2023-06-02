@@ -8,7 +8,15 @@ import sqlite3
 #import functions
 import validators
 
-import wordnet
+import nltk
+
+from nltk.corpus import wordnet
+nltk.download('wordnet')
+nltk.download('omw-1.4')
+import os
+from whoosh.index import create_in, open_dir
+from whoosh.fields import Schema, TEXT, ID
+from whoosh.qparser import QueryParser
 
 with open('token.txt') as f:
     token = f.readline()
@@ -77,8 +85,10 @@ async def on_message(message):
             await message.channel.send('Crawling iniciado') 
 
             while (step < 15) and len(url) > 0 and validators.url(url[0]):
+
+                currurl = url.pop(0)
                 
-                response = requests.get(url.pop(0))
+                response = requests.get(currurl)
 
                 # Parse the HTML content using BeautifulSoup
                 soup = BeautifulSoup(response.content, "html.parser")
@@ -97,7 +107,7 @@ async def on_message(message):
                 conn.execute("CREATE TABLE IF NOT EXISTS crawl (id INTEGER PRIMARY KEY, url TEXT, content TEXT)")
 
                 # Insert the page content into the database
-                conn.execute("INSERT INTO crawl (url, content) VALUES (?, ?)", (str(response), str(page_content)))
+                conn.execute("INSERT INTO crawl (url, content) VALUES (?, ?)", (currurl, str(page_content)))
                 conn.commit()
 
                 # Close the database connection
@@ -105,6 +115,40 @@ async def on_message(message):
                 step +=1
                 if len(url) > 0:
                     url[0] = url[0].get('href')
+
+            
+            
+            # Create or open the index directory
+            index_dir = "index"
+            if not os.path.exists(index_dir):
+                os.mkdir(index_dir)
+            ix = create_in(index_dir, Schema(url=ID(stored=True), content=TEXT))
+
+            # Open the index writer
+            writer = ix.writer()
+
+            # Open the database connection
+            conn = sqlite3.connect("crawl.db")
+
+            # Retrieve the pages from the database
+            cursor = conn.execute("SELECT url, content FROM crawl")
+
+            # Index each page
+            for row in cursor:
+                await message.channel.send('Aplicando index reversa') 
+                urll = row[0]
+                content = row[1]
+                writer.add_document(url=urll, content=content)
+
+            # Commit the changes to the index
+            writer.commit()
+
+            # Close the index writer
+            #writer.close()
+
+            # Close the database connection
+            conn.close()
+
             await message.channel.send('Crawling finalisado') 
         else:
             await message.channel.send('Entrada invalida para !crawl') 
@@ -121,14 +165,15 @@ async def on_message(message):
         c = conn.cursor()
 
         # Search for records containing the word 'example'
-        c.execute("SELECT * FROM table_name WHERE column_name LIKE ?", ('%'+payload+'%',))
+        c.execute("SELECT * FROM crawl WHERE content LIKE ?", ('%'+payload+'%',))
 
         # Fetch the results
         results = c.fetchall()
 
+        #print(results[1][1])
         # Close the database connection
         conn.close()
-        await message.channel.send(str(results) )
+        await message.channel.send(str(results[1][1]) )
 
 
     elif message.content.lower().split(' ')[0] == '!wn_search':
@@ -147,9 +192,10 @@ async def on_message(message):
             synsets = wordnet.synsets(payload)
             for synset in synsets:
                 lemma = synset.lemmas()[0].name()
-                c.execute("SELECT * FROM table_name WHERE column_name LIKE ?", ('%'+lemma+'%',))
+                c.execute("SELECT * FROM crawl WHERE content LIKE ?", ('%'+lemma+'%',))
                 results = c.fetchall()
-                await message.channel.send(str(results) )
+                #print(results)
+                await message.channel.send(str(results[1][1]) )
 
             # Close the database connection
             conn.close()
